@@ -1,0 +1,22 @@
+redis = require 'redis'
+{inspect} = require \util
+
+module.exports = (bot, cmds, opts, brain, isop) ->
+  bot.on \message, (nick, to, text) ->
+    if m = text.match /^!([^ ]+)( =(?: (.*))?)?/
+      if m[2] and isop nick
+        if m[3]
+          brain.hset \factoids, m[1], m[3], redis.print
+        else
+          brain.hdel \factoids, m[1], redis.print
+      else
+        brain.hexists \factoids, m[1], (err, exists) ->
+          if exists
+            brain.hget \factoids, m[1], (err, text) ->
+              throw err if err
+              bot.say to, text
+
+  cmds.on \factoids, (str, to) ->
+    brain.hgetall \factoids, (err, factoids) ->
+      throw err if err
+      bot.say to, inspect factoids

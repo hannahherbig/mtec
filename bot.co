@@ -1,0 +1,43 @@
+irc            = require \irc
+_              = require \underscore
+redis          = require \redis
+{EventEmitter} = require \events
+{inspect}      = require \util
+
+opts = require './opts'
+
+Array::remove = (item) -> @splice @indexOf(item), 1
+Array::insert = (i, v) -> @splice i, 0, v
+Array::swap   = (x, y) -> @[y] = (@[x] += @[y] -= @[x]) - @[y]
+String::left  =        -> @slice 0, @indexOf ' '
+String::right =        -> @slice @indexof(' ') + 1
+
+ops = []
+
+addop = (nick) -> ops.push nick unless isop nick
+delop = (nick) -> ops.remove nick
+isop  = (nick) -> _.include ops, nick
+
+bot = new irc.Client opts.server, opts.nick, channels: [opts.main, opts.ops], debug: true
+cmds = new EventEmitter
+brain = redis.createClient()
+
+bot.on \registered, -> bot.say \NickServ, "IDENTIFY #{opts.pass}"
+bot.on \names, (channel, nicks) ->
+  if channel is opts.main
+    for nick, mode in nicks
+      addop nick if _.include <[ % @ & ~ ]>, mode
+bot.on \nick, (oldnick, newnick) ->
+  if isop oldnick
+    delop oldnick
+    addop newnick
+bot.on \join,    (channel, nick)              -> addop nick if channel is opts.main
+bot.on \part,    (channel, nick)              -> delop nick if channel is opts.main
+bot.on \+mode,   (channel, setter, mode, arg) -> addop arg if channel is opts.main and _.include <[ h o a q ]>, mode
+bot.on \-mode,   (channel, setter, mode, arg) -> delop arg if channel is opts.main and _.include <[ h o a q ]>, mode
+bot.on \message, (nick, to, text, message)    -> cmds.emit m[1].toLowerCase(), m[2], to if isop nick and m = text.match /!([^ ]+)(?: (.*))?$/
+bot.on \error,                                -> console.log "ERROR: #{inspect(it)}"
+
+setInterval (-> brain.save redis.print), 60000
+
+_.each opts.modules, (mod) -> require("./#mod")(bot, cmds, opts, brain, isop)
