@@ -18,3 +18,5 @@ here's the compiled javascript in case you hate coco
       modules: ['topic', 'factoids'],
       pass: 'nickservpassword'
     };
+
+public domain.
