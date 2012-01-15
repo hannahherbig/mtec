@@ -35,7 +35,7 @@ bot.on \join,    (channel, nick)              -> addop nick if channel is opts.m
 bot.on \part,    (channel, nick)              -> delop nick if channel is opts.main
 bot.on \+mode,   (channel, setter, mode, arg) -> addop arg if channel is opts.main and _.include <[ h o a q ]>, mode
 bot.on \-mode,   (channel, setter, mode, arg) -> delop arg if channel is opts.main and _.include <[ h o a q ]>, mode
-bot.on \message, (nick, to, text, message)    -> cmds.emit m[1].toLowerCase(), m[2], to if isop nick and m = text.match /!([^ ]+)(?: (.*))?$/
+bot.on \message, (nick, to, text, message)    -> cmds.emit m[1].toLowerCase(), m[2], to if isop nick and m = text.match /^!([^ ]+)(?: (.*))?$/
 bot.on \error,                                -> console.log "ERROR: #{inspect(it)}"
 
 setInterval (-> brain.save redis.print), 60000
