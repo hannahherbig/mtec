@@ -10,7 +10,7 @@ Array::remove = (item) -> @splice @indexOf(item), 1
 Array::insert = (i, v) -> @splice i, 0, v
 Array::swap   = (x, y) -> @[y] = (@[x] += @[y] -= @[x]) - @[y]
 String::left  =        -> @slice 0, @indexOf ' '
-String::right =        -> @slice @indexof(' ') + 1
+String::right =        -> @slice @indexOf(' ') + 1
 
 ops = []
 
