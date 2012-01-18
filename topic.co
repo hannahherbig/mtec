@@ -16,8 +16,8 @@ module.exports = (bot, cmds, opts, brain) ->
   cmds.on \append,      (str) -> brain.rpush \topic, str, topicupdate
   cmds.on \topic,       (str) -> brain.lset \topic, 0, str, topicupdate
   cmds.on \message,     (str) -> brain.lset \topic, -1, str, topicupdate
-  cmds.on \set,         (str) -> brain.lset \topic, i, str.right(), topicupdate unless isNaN(i = parseInt(str.left()))
-  cmds.on \insert,      (str) -> brain.linsert \topic, i, str.right(), topicupdate unless isNaN(i = parseInt(str.left()))
+  cmds.on \set,         (str) -> brain.lset \topic, i, str.right(), topicupdate unless isNaN i = parseInt str.left()
+  cmds.on \insert,      (str) -> brain.linsert \topic, i, str.right(), topicupdate unless isNaN i = parseInt str.left()
   cmds.on \delete, cb = (str) ->
     brain.lindex \topic, parseInt(str), wraperr (topic) ->
       brain.lrem \topic, 0, topic, wraperr topicupdate
