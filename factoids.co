@@ -1,4 +1,4 @@
-redis = require 'redis'
+redis = require \redis
 {inspect} = require \util
 
 module.exports = (bot, cmds, opts, brain, isop) ->

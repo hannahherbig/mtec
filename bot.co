@@ -18,9 +18,16 @@ addop = (nick) -> ops.push nick unless isop nick
 delop = (nick) -> ops.remove nick
 isop  = (nick) -> _.include ops, nick
 
-bot = new irc.Client opts.server, opts.nick, channels: [opts.main, opts.ops], debug: true
+bot = new irc.Client opts.server, opts.nick, debug: true
 cmds = new EventEmitter
 brain = redis.createClient()
+
+# delay joining channels so that it can join channels that require it to be
+# registered or identified
+setTimeout ->
+  bot.join opts.main
+  bot.join opts.ops
+, 5000
 
 # this is all to keep track of ops
 bot.on \names, (channel, nicks) ->
@@ -31,15 +38,21 @@ bot.on \nick, (oldnick, newnick) ->
   if isop oldnick
     delop oldnick
     addop newnick
-bot.on \join,    (channel, nick)              -> addop nick if channel is opts.main
-bot.on \part,    (channel, nick)              -> delop nick if channel is opts.main
-bot.on \+mode,   (channel, setter, mode, arg) -> addop arg if channel is opts.main and _.include <[ h o a q ]>, mode
-bot.on \-mode,   (channel, setter, mode, arg) -> delop arg if channel is opts.main and _.include <[ h o a q ]>, mode
+bot.on \join, (channel, nick) -> addop nick if channel is opts.main
+bot.on \part, (channel, nick) -> delop nick if channel is opts.main
+bot.on \+mode, (channel, setter, mode, arg) ->
+  addop arg if channel is opts.main and _.include <[ h o a q ]>, mode
+bot.on \-mode, (channel, setter, mode, arg) ->
+  delop arg if channel is opts.main and _.include <[ h o a q ]>, mode
 
 bot.on \registered, -> bot.say \NickServ, "IDENTIFY #{opts.pass}"
-bot.on \message, (nick, to, text, message)    -> cmds.emit m[1].toLowerCase(), m[2], to if isop nick and m = text.match /^!([^ ]+)(?: (.*))?$/
-bot.on \error,                                -> console.log "ERROR: #{inspect(it)}"
+bot.on \message, (nick, to, text, message) ->
+  # this magical regexp splits "!topic hi" up into "topic", "hi", and
+  # "!showtopic" into "showtopic" and null.
+  if isop nick and m = text.match /^!([^ ]+)(?: (.*))?$/
+    cmds.emit m[1].toLowerCase(), m[2], to
+bot.on \error, -> console.log "ERROR: #{inspect(it)}"
 
-setInterval (-> brain.save redis.print), 60000
+setInterval (-> brain.save redis.print), 300000
 
 _.each opts.modules, (mod) -> require("./#mod")(bot, cmds, opts, brain, isop)

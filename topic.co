@@ -6,24 +6,23 @@ module.exports = (bot, cmds, opts, brain) ->
       throw err if err
       callback arg
   topicupdate = ->
-    brain.lrange \topic, 0, -1, (err, topic) ->
-      throw err if err
+    brain.lrange \topic, 0, -1, wraperr (topic) ->
       bot.send \topic, opts.main, topic.join ' | '
 
-  bot.on \+mode, (channel, setter, mode, arg) -> topicupdate() if arg is opts.nick
+  bot.on \+mode, (channel, setter, mode, arg) ->
+    topicupdate() if arg is opts.nick
 
-  cmds.on \prepend,     (str) -> brain.lpush \topic, str, topicupdate
-  cmds.on \append,      (str) -> brain.rpush \topic, str, topicupdate
-  cmds.on \topic,       (str) -> brain.lset \topic, 0, str, topicupdate
-  cmds.on \message,     (str) -> brain.lset \topic, -1, str, topicupdate
-  cmds.on \set,         (str) -> brain.lset \topic, i, str.right(), topicupdate unless isNaN i = parseInt str.left()
-  cmds.on \insert,      (str) -> brain.linsert \topic, i, str.right(), topicupdate unless isNaN i = parseInt str.left()
+  cmds.on \prepend, (str) -> brain.lpush \topic, str, topicupdate
+  cmds.on \append,  (str) -> brain.rpush \topic, str, topicupdate
+  cmds.on \topic,   (str) -> brain.lset \topic, 0, str, topicupdate
+  cmds.on \message, (str) -> brain.lset \topic, -1, str, topicupdate
+  cmds.on \set, (str) ->
+    unless isNaN i = parseInt str.left()
+      brain.lset \topic, i, str.right(), topicupdate
   cmds.on \delete, cb = (str) ->
     brain.lindex \topic, parseInt(str), wraperr (topic) ->
       brain.lrem \topic, 0, topic, wraperr topicupdate
   cmds.on \remove, cb
   cmds.on \clear,  cb
-  cmds.on \showtopic,   (str, to) ->
-    brain.lrange \topic, 0, -1, (err, topic) ->
-      throw err if err
-      bot.say to, inspect topic
+  cmds.on \showtopic, (str, to) ->
+    brain.lrange \topic, 0, -1, wraperr (topic) -> bot.say to, inspect topic
