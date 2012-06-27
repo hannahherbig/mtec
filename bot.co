@@ -38,7 +38,6 @@ bot.on \nick, (oldnick, newnick) ->
   if isop oldnick
     delop oldnick
     addop newnick
-bot.on \join, (channel, nick) -> addop nick if channel is opts.main
 bot.on \part, (channel, nick) -> delop nick if channel is opts.main
 bot.on \+mode, (channel, setter, mode, arg) ->
   addop arg if channel is opts.main and _.include <[ h o a q ]>, mode
